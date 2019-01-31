@@ -1,0 +1,1106 @@
+'Bugs:
+' - sometimes bulletHit goes wierd, especially when many asteroids
+' - dust is not overwritten by white screen
+
+'Constants (mess with at own risk)
+
+windowX=1280
+windowY=720
+wheelRadius=128
+gemRadius=32
+MSPF=16
+bullet1Radius=32
+minion1Radius=44
+bodyRadius=64
+turretLength=80
+turretFiringLength=112
+speedCap=20
+accelerationCoeff=3
+decelerationCoeff=2
+fireChargeTime=4
+bulletHitLengthH=52
+bulletHitWidthH=24
+spawnLength=100
+asteroidVX=0
+asteroidVY=5
+asteroidDeviationX=2
+asteroidDeviationY=1
+asteroidRadius=40
+numAsteroids=50
+asteroidRotSpeedBase=2
+asteroidRotSpeedDeviation=10
+HP=5
+recoverTime=100
+HPFadeTime=40
+HPFadePeriod=3
+HPGoneTime=20
+HPShakeTime=20
+HPShakeMagnitude=5
+numAsteroidsScreen=10
+asteroidBaseHP=10
+dustRadius=64
+dustCycleLength=50
+dustSizeStart=0.5
+dustSizeEnd=2
+hitVelocity=0
+bodyRotRest=2
+bodyRotMovingCoeff=0.5
+deathSplosionRadius=96
+deathSplosionShakeMagnitude=6
+deathShakeTime=50
+deathSplosionSize1=1.5
+deathSplosionSize2=2.5
+deathFadeOutTime=100
+deathRingMaxSize=5
+deathRingRadius=200
+deathWhiteTime=30
+deathFadeInTime=80
+deathFireSpeed=5
+deathWaitTime=100
+deathScreenY=304
+deathScreenYend=416
+DSRstart=132
+DSRend=448
+DSQstart=880
+DSQend=1128
+BossStartBaseHealth=150
+BossStartRadius=78
+BossStartSpeed=1000
+
+'Used Variables
+
+wheelRot=0
+wheelPhase=0
+lastTime=0
+wPressed=0
+aPressed=0
+sPressed=0
+dPressed=0
+mouseClicked=0
+turretRot=0
+MX=0
+MY=0
+TPX=windowX/2
+TPY=windowY/2
+TVX=0
+TVY=0
+fireCharge=0
+intersectX=0
+intersectY=0
+tempRand=0
+frameTimer=0
+i=0
+recoveryTimer=0
+bulletHasHit=0
+bulletTargetNum=0
+m=0
+b=0
+discriminant=0
+FX=0
+FY=0
+recoverTimer=0
+notAVirus=0
+HPFadeTimer=0
+turretShookX=0
+turretShookY=0
+bodyRot=0
+deathFireCycle=0
+deathFireFrame=0
+TX=0
+TY=0
+targetRadius=0
+bulletHitX=0
+bulletHitY=0
+intersectFound=0
+willRetry=0
+BossHP=0
+BPX=windowX/2
+BPY=-BossStartRadius
+BossStartPhase=0
+bossStartRot=0
+BossStartRotSpeed=3
+
+'Arrays:
+
+'asteroids[ ]
+'asteroidsExist[ ]
+'asteroidPos[ ][ ]
+'asteroidVelocities[ ][ ]
+'asteroidRotSpeeds[ ]
+'asteroidRots[ ]
+'bulletHitCoords[ ]
+'asteroidHP[ ]
+'asteroidDust[ ]
+'asteroidDustCycle[ ]
+
+'Setup
+
+GraphicsWindow.Width=windowX
+GraphicsWindow.Height=windowY
+GraphicsWindow.CanResize=0
+
+'Graphics
+
+GraphicsWindow.Hide()
+
+rock1IM=Program.Directory+"\images\rock1.png"
+dust1IM=program.Directory+"\images\dust1.png"
+
+BG=Shapes.AddImage(Program.Directory+"\images\tempBG.png")
+For i=0 To 5 'Step -1
+  health[i]=Shapes.AddImage(Program.Directory+"\images\health"+i+".png")
+  Shapes.HideShape(health[i])
+EndFor
+For i=1 To 5
+  bodyDead[i]=Shapes.AddImage(Program.Directory+"\images\bodyDead"+i+".png")
+  Shapes.HideShape(bodyDead[i])
+EndFor
+body=Shapes.AddImage(Program.Directory+"\images\tankBody.png")
+Shapes.Move(body,(windowX/2)-bodyRadius,(windowY/2)-bodyRadius)
+bodyDam=Shapes.AddImage(Program.Directory+"\images\tankBodyHurt.png")
+Shapes.HideShape(bodyDam)
+turret=Shapes.AddImage(Program.Directory+"\images\turret.png")
+Shapes.Move(turret,(windowX/2)-bodyRadius,(windowY/2)-turretLength)
+turretR=Shapes.AddImage(Program.Directory+"\images\turretReload.png")
+Shapes.HideShape(turretR)
+turretF=Shapes.AddImage(Program.Directory+"\images\turretFiring.png")
+Shapes.HideShape(turretF)
+For i=1 To 3
+  bulletHitAll[i]=Shapes.AddImage(Program.Directory+"\images\bulletHit"+i+".png")
+  Shapes.HideShape(bulletHitAll[i])
+EndFor
+bulletHit=bulletHitAll[1]
+For i=1 To 13
+  fwheel[i]=Shapes.AddImage(Program.Directory+"\images\fwheel"+i+".png")
+  Shapes.HideShape(fwheel[i])
+EndFor
+For i=1 To numAsteroidsScreen
+  asteroids[i]=Shapes.AddImage(rock1IM)
+  Shapes.HideShape(asteroids[i])
+EndFor
+bossStart=Shapes.AddImage(Program.Directory+"\images\coreRock1.png")
+Shapes.HideShape(bossStart)
+bossStartHitOverlay=Shapes.AddImage(Program.Directory+"\images\coreRock1 HIT.png")
+Shapes.HideShape(bossStartHitOverlay)
+wheel1=Shapes.AddImage(Program.Directory+"\images\wheel1.png")
+Shapes.HideShape(wheel1)
+gem=Shapes.AddImage(Program.Directory+"\images\gem.png")
+Shapes.HideShape(gem)
+asteroidHitOverlay=Shapes.AddImage(Program.Directory+"\images\rock1 HIT.png")
+Shapes.HideShape(asteroidHitOverlay)
+deathRing=Shapes.AddImage(Program.Directory+"\images\deathRing.png")
+Shapes.Zoom(deathRing,0.1,0.1)
+Shapes.HideShape(deathRing)
+For i=1 To 7
+  deathSplosion[i]=Shapes.AddImage(Program.Directory+"\images\deathSplosion"+i+".png")
+  Shapes.HideShape(deathSplosion[i])
+EndFor
+deathScreenN=Shapes.AddImage(Program.Directory+"\images\deathScreenNeutral.png")
+Shapes.HideShape(deathScreenN)
+Shapes.Move(deathScreenN,0,deathScreenY)
+deathScreenR=Shapes.AddImage(Program.Directory+"\images\deathScreenRetry.png")
+Shapes.HideShape(deathScreenR)
+Shapes.Move(deathScreenR,0,deathScreenY)
+deathScreenQ=Shapes.AddImage(Program.Directory+"\images\deathScreenQuit.png")
+Shapes.HideShape(deathScreenQ)
+Shapes.Move(deathScreenQ,0,deathScreenY)
+whiteScreen=Shapes.AddImage(Program.Directory+"\images\whiteScreen.png")
+Shapes.SetOpacity(whiteScreen,0)
+'test=shapes.AddImage(Program.Directory+"\images\rock2.png")
+'testArrow=Shapes.AddImage(Program.Directory+"\images\testArrow.png")
+
+'Code
+
+GraphicsWindow.KeyUp=kUp
+GraphicsWindow.KeyDown=kDown
+GraphicsWindow.MouseUp=mUp
+GraphicsWindow.MouseDown=mDown
+
+GraphicsWindow.Show()
+
+willRetry=1
+While(willRetry=1)
+  initiate()
+  lastTime=Clock.ElapsedMilliseconds
+  introWait()
+  introAsteroids()
+  If(HP>0)Then
+    introBoss()
+    If(HP>0)Then
+      introBossBreak()
+      TextWindow.WriteLine("ou are winer")
+    EndIf
+  EndIf
+EndWhile
+GraphicsWindow.Hide()
+
+'Subroutines
+
+Sub initiate
+  For i=0 To 5
+    Shapes.HideShape(health[i])
+  EndFor
+  For i=1 To 5
+    Shapes.HideShape(bodyDead[i])
+  EndFor
+  Shapes.Move(body,(windowX/2)-bodyRadius,(windowY/2)-bodyRadius)
+  Shapes.HideShape(bodyDam)
+  Shapes.Move(turret,(windowX/2)-bodyRadius,(windowY/2)-turretLength)
+  Shapes.HideShape(turretR)
+  Shapes.HideShape(turretF)
+  For i=1 To 3
+    Shapes.HideShape(bulletHitAll[i])
+  EndFor
+  For i=1 To 13
+    Shapes.HideShape(fwheel[i])
+  EndFor
+  Shapes.HideShape(wheel1)
+  Shapes.HideShape(gem)
+  For i=1 To numAsteroidsScreen
+    Shapes.HideShape(asteroids[i])
+  EndFor
+  Shapes.HideShape(asteroidHitOverlay)
+  Shapes.Zoom(deathRing,0.1,0.1)
+  Shapes.HideShape(deathRing)
+  For i=1 To 7
+    Shapes.HideShape(deathSplosion[i])
+  EndFor
+  Shapes.HideShape(deathScreenN)
+  Shapes.HideShape(deathScreenR)
+  Shapes.HideShape(deathScreenQ)
+  Shapes.SetOpacity(whiteScreen,0)
+  
+  Shapes.ShowShape(body)
+  Shapes.ShowShape(turret)
+EndSub
+
+Sub introWait
+  For frameTimer=1 To spawnLength
+    While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+    Endwhile
+    MX=GraphicsWindow.MouseX
+    MY=GraphicsWindow.MouseY
+    
+    'Move tank
+    moveTank() 'Big Sub
+    
+    'Rotate Turret
+    rotateTurret() 'Big Sub
+    
+    'Move Enemy
+    
+    'Fire (complicated)
+    If(fireCharge<fireChargeTime)Then
+      fireCharge=fireCharge+1
+    EndIf
+    If(mouseClicked=1)Then
+      Shapes.ShowShape(turretR)
+      Shapes.Rotate(turretR,turretRot)
+      If(fireCharge=fireChargeTime)Then
+        Shapes.ShowShape(turretF)
+        Shapes.Rotate(turretF,turretRot)
+        bulletHit=bulletHitAll[Math.GetRandomNumber(3)]
+        bulletHitWallAnimation() 'Big Sub
+        Shapes.ShowShape(bulletHit)
+        Shapes.Rotate(bulletHit,turretRot+180)
+        fireCharge=0
+      Else
+        Shapes.HideShape(turretF)
+        Shapes.HideShape(bulletHit)
+      EndIf
+    Else
+      Shapes.HideShape(turretR)
+      Shapes.HideShape(turretF)
+      Shapes.HideShape(bulletHit)
+    EndIf
+    
+    'Shot consequences
+    
+    ''Player Hit
+    
+    lastTime=lastTime+MSPF
+  EndFor
+EndSub
+
+Sub introAsteroids
+  For i=1 To numAsteroidsScreen
+    asteroidPos[i][1]=Math.GetRandomNumber(windowX-(2*asteroidRadius))+asteroidRadius
+    asteroidPos[i][2]=Math.GetRandomNumber((2*windowY)-(2*asteroidRadius))+asteroidRadius-(2*windowY)
+    Shapes.Move(asteroids[i],asteroidPos[i][1],asteroidPos[i][2])
+    asteroidVelocities[i][1]=asteroidVX+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationX)
+    asteroidVelocities[i][2]=asteroidVY+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationY)
+    asteroidRotSpeeds[i]=asteroidRotSpeedBase+Math.GetRandomNumber(asteroidRotSpeedDeviation)
+    asteroidRots[i]=0
+    asteroidHP[i]=asteroidBaseHP
+    asteroidsExist[i]=1
+    asteroidDustCycle[i]=0
+    Shapes.ShowShape(asteroids[i])
+  EndFor
+  
+  lastTime=Clock.ElapsedMilliseconds
+  While(numAsteroids>0 And HP>0)
+    While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+    Endwhile
+    MX=GraphicsWindow.MouseX
+    MY=GraphicsWindow.MouseY
+    
+    moveTank() 'Big Sub
+    
+    rotateTurret() 'Big Sub
+    
+    manageRecovery() 'Big Sub
+    
+    If(fireCharge<fireChargeTime)Then
+      fireCharge=fireCharge+1
+    EndIf
+    If(mouseClicked=1)Then
+      Shapes.ShowShape(turretR)
+      Shapes.Rotate(turretR,turretRot)
+      Shapes.HideShape(asteroidHitOverlay)
+      If(fireCharge=fireChargeTime)Then
+        Shapes.ShowShape(turretF)
+        Shapes.Rotate(turretF,turretRot)
+        bulletHit=bulletHitAll[Math.GetRandomNumber(3)]
+        bulletHasHit=0
+        For i=1 To numAsteroidsScreen
+          If(asteroidsExist[i]=1)Then
+            If(asteroidPos[i][2]+asteroidRadius>0)Then
+              If(asteroidPos[i][1]+asteroidRadius>0 And asteroidPos[i][1]-asteroidRadius<windowX)Then
+                TX=asteroidPos[i][1]
+                TY=asteroidPos[i][2]
+                targetRadius=asteroidRadius
+                getIntersect() 'Big Sub
+                If(intersectFound=1)Then
+                  If(bulletHasHit=0 Or Math.SquareRoot(Math.Power(intersectX-TPX,2)+Math.Power(intersectY-TPY,2))<=Math.SquareRoot(Math.Power(bulletHitX-TPX,2)+Math.Power(bulletHitY-TPY,2)))Then
+                    bulletHitX=intersectX
+                    bulletHitY=intersectY
+                    bulletTargetNum=i
+                    bulletHasHit=1
+                  EndIf
+                EndIf
+              EndIf
+            EndIf
+          EndIf
+        EndFor
+        If(bulletHasHit=1)Then
+          asteroidHP[bulletTargetNum]=asteroidHP[bulletTargetNum]-1
+          If(asteroidHP[bulletTargetNum]<=0)Then
+            asteroidsExist[bulletTargetNum]=0
+            asteroidDustCycle[bulletTargetNum]=1
+            Shapes.HideShape(asteroids[bulletTargetNum])
+            asteroidDust[bulletTargetNum]=Shapes.AddImage(dust1IM)
+            Shapes.Move(asteroidDust[bulletTargetNum],asteroidPos[bulletTargetNum][1]-dustRadius,asteroidPos[bulletTargetNum][2]-dustRadius)
+          Else
+            If(Math.SquareRoot(Math.Power(bulletHitX-FX,2)+Math.Power(bulletHitY-FY,2))>=asteroidRadius)Then
+              Shapes.Move(bulletHit,bulletHitX-bulletHitWidthH,bulletHitY-bulletHitLengthH)
+              Shapes.ShowShape(bulletHit)
+              Shapes.Rotate(bulletHit,turretRot+180)
+            EndIf
+            Shapes.Move(asteroidHitOverlay,asteroidPos[bulletTargetNum][1]-asteroidRadius,asteroidPos[bulletTargetNum][2]-asteroidRadius)
+            Shapes.ShowShape(asteroidHitOverlay)
+            Shapes.Rotate(asteroidHitOverlay,asteroidRots[bulletTargetNum])
+          EndIf
+        Else
+          bulletHitWallAnimation() 'Big Sub
+          Shapes.ShowShape(bulletHit)
+          Shapes.Rotate(bulletHit,turretRot+180)
+        EndIf
+        fireCharge=0
+      Else
+        Shapes.HideShape(turretF)
+        Shapes.HideShape(bulletHit)
+      EndIf
+    Else
+      Shapes.HideShape(turretR)
+      Shapes.HideShape(turretF)
+      Shapes.HideShape(bulletHit)
+      Shapes.HideShape(asteroidHitOverlay)
+    EndIf
+  
+    For i=1 To numAsteroidsScreen
+      If(asteroidsExist[i]=1)Then
+        asteroidPos[i][1]=asteroidPos[i][1]+asteroidVelocities[i][1]
+        asteroidPos[i][2]=asteroidPos[i][2]+asteroidVelocities[i][2]
+        If(asteroidPos[i][2]>windowY+asteroidRadius)Then
+          If(numAsteroids<=numAsteroidsScreen)Then
+            Shapes.HideShape(asteroids[i])
+            asteroidsExist[i]=0
+          Else
+            asteroidPos[i][1]=Math.GetRandomNumber(windowX-(2*asteroidRadius))+asteroidRadius
+            asteroidPos[i][2]=Math.GetRandomNumber(windowY-(2*asteroidRadius))+asteroidRadius-windowY
+            asteroidVelocities[i][1]=asteroidVX+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationX)
+            asteroidVelocities[i][2]=asteroidVY+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationY)
+            asteroidRotSpeeds[i]=asteroidRotSpeedBase+Math.GetRandomNumber(asteroidRotSpeedDeviation)
+            asteroidHP[i]=asteroidBaseHP
+          EndIf
+          numAsteroids=numAsteroids-1
+        Else
+          If(Math.SquareRoot(Math.Power(asteroidPos[i][1]-TPX,2)+Math.Power(asteroidPos[i][2]-TPY,2))<asteroidRadius+bodyRadius)Then
+            If(recoverTimer=0)Then
+              HP=HP-1
+              Shapes.Move(health[HP],TPX-bodyRadius,TPY-bodyRadius)
+              Shapes.ShowShape(health[HP])
+              Shapes.Move(bodyDam,TPX-bodyRadius,TPY-bodyRadius)
+              Shapes.ShowShape(bodyDam)
+              Shapes.HideShape(body)
+              If(HP>0)Then
+                Shapes.Move(health[HP+1],TPX-bodyRadius,TPY-bodyRadius)
+                Shapes.ShowShape(health[HP+1])
+                recoverTimer=recoverTime
+              Else
+                Shapes.HideShape(asteroidHitOverlay)
+                deathStart() 'Big Sub
+                For i=1 To numAsteroidsScreen
+                  If(asteroidsExist[i]=1)Then
+                    Shapes.HideShape(asteroids[i])
+                  EndIf
+                EndFor
+                deathEnd() 'Big Sub
+                willRetry=-1
+                While(willRetry=-1)
+                  If(GraphicsWindow.MouseY>=deathScreenY And GraphicsWindow.MouseY<=deathScreenYend)Then
+                    If(GraphicsWindow.MouseX>=DSRstart And GraphicsWindow.MouseX<=DSRend)Then
+                      Shapes.HideShape(deathScreenN)
+                      Shapes.ShowShape(deathScreenR)
+                      Shapes.HideShape(deathScreenQ)
+                      If(mouseClicked=1)Then
+                        willRetry=1
+                      EndIf
+                    ElseIf(GraphicsWindow.MouseX>=DSQstart And GraphicsWindow.MouseX<=DSQend)Then
+                      Shapes.HideShape(deathScreenN)
+                      Shapes.HideShape(deathScreenR)
+                      Shapes.ShowShape(deathScreenQ)
+                      If(mouseClicked=1)Then
+                        willRetry=0
+                      EndIf
+                    Else
+                      Shapes.ShowShape(deathScreenN)
+                      Shapes.HideShape(deathScreenR)
+                      Shapes.HideShape(deathScreenQ)
+                    EndIf
+                  Else
+                    Shapes.ShowShape(deathScreenN)
+                    Shapes.HideShape(deathScreenR)
+                    Shapes.HideShape(deathScreenQ)
+                  EndIf
+                  deathFireFrame=deathFireFrame+1
+                  If(deathFireFrame>=deathFireSpeed)Then
+                    deathFireCycle=deathFireCycle+1
+                    If(deathFireCycle>4)Then
+                      deathFireCycle=0
+                      Shapes.ShowShape(bodyDead[1])
+                      Shapes.HideShape(bodyDead[5])
+                    Else
+                      Shapes.ShowShape(bodyDead[deathFireCycle+1])
+                      Shapes.HideShape(bodyDead[deathFireCycle])
+                    EndIf
+                    deathFireFrame=0
+                  EndIf
+                  Program.Delay(MSPF)
+                EndWhile
+                
+              EndIf
+            EndIf
+          EndIf
+        EndIf
+        Shapes.Move(asteroids[i],asteroidPos[i][1]-asteroidRadius,asteroidPos[i][2]-asteroidRadius)
+        Shapes.Rotate(asteroids[i],asteroidRots[i])
+        asteroidRots[i]=asteroidRots[i]+asteroidRotSpeeds[i]
+      Else
+        If(asteroidDustCycle[i]>0)Then
+          If(asteroidDustCycle[i]>dustCycleLength)Then
+            asteroidDustCycle[i]=0
+            Shapes.Remove(asteroidDust[i])
+            If(numAsteroids>numAsteroidsScreen)Then
+              asteroidsExist[i]=1
+              asteroidPos[i][1]=Math.GetRandomNumber(windowX-(2*asteroidRadius))+asteroidRadius
+              asteroidPos[i][2]=Math.GetRandomNumber(windowY-(2*asteroidRadius))+asteroidRadius-windowY
+              Shapes.Move(asteroids[i],asteroidPos[i][1]-asteroidRadius,asteroidPos[i][2]-asteroidRadius)
+              Shapes.ShowShape(asteroids[i])
+              asteroidVelocities[i][1]=asteroidVX+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationX)
+              asteroidVelocities[i][2]=asteroidVY+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationY)
+              asteroidRotSpeeds[i]=asteroidRotSpeedBase+Math.GetRandomNumber(asteroidRotSpeedDeviation)
+              asteroidHP[i]=asteroidBaseHP
+            EndIf
+            numAsteroids=numAsteroids-1
+          Else
+            Shapes.Zoom(asteroidDust[i],dustSizeStart+(Math.SquareRoot(asteroidDustCycle[i]/dustCycleLength)*(dustSizeEnd-dustSizeStart)),dustSizeStart+(Math.SquareRoot(asteroidDustCycle[i]/dustCycleLength)*(dustSizeEnd-dustSizeStart)))
+            Shapes.SetOpacity(asteroidDust[i],100*Math.Power(1-(asteroidDustCycle[i]/dustCycleLength),2))
+            Shapes.Rotate(asteroidDust[i],asteroidRots[i])
+            asteroidRots[i]=asteroidRots[i]+(asteroidRotSpeeds[i]*Math.SquareRoot(1-(asteroidDustCycle[i]/dustCycleLength)))
+            asteroidDustCycle[i]=asteroidDustCycle[i]+1
+          EndIf
+        EndIf
+      EndIf
+    EndFor
+    lastTime=lastTime+MSPF
+  EndWhile
+EndSub
+
+Sub introBoss
+  Shapes.Move(bossStart,-BossStartRadius,-BossStartRadius)
+  Shapes.ShowShape(bossStart)
+  BossHP=BossStartBaseHealth
+  While(HP>0 And BossStartPhase<BossStartSpeed And BossHP>0)
+    While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+    Endwhile
+    MX=GraphicsWindow.MouseX
+    MY=GraphicsWindow.MouseY
+    
+    moveTank() 'Big Sub
+    
+    rotateTurret() 'Big Sub
+    
+    manageRecovery() 'Big Sub
+    
+    BPY=((windowY/2)+BossStartRadius)*(1-Math.Power((BossStartPhase/BossStartSpeed)-1,2))-BossStartRadius
+    Shapes.Move(bossStart,BPX-BossStartRadius,BPY-BossStartRadius)
+    bossStartRot=bossStartRot+BossStartRotSpeed
+    If(bossStartRot>360)Then
+      bossStartRot=bossStartRot-360
+    EndIf
+    Shapes.Rotate(bossStart,bossStartRot)
+    BossStartPhase=BossStartPhase+1
+    
+    Shapes.HideShape(bossStartHitOverlay)
+    If(fireCharge<fireChargeTime)Then
+      fireCharge=fireCharge+1
+    EndIf
+    If(mouseClicked=1)Then
+      Shapes.ShowShape(turretR)
+      Shapes.Rotate(turretR,turretRot)
+      If(fireCharge=fireChargeTime)Then
+        Shapes.ShowShape(turretF)
+        Shapes.Rotate(turretF,turretRot)
+        bulletHit=bulletHitAll[Math.GetRandomNumber(3)]
+        TX=BPX
+        TY=BPY
+        targetRadius=BossStartRadius
+        getIntersect() 'Big Sub
+        If(intersectFound=1)Then
+          Shapes.Move(bossStartHitOverlay,BPX-BossStartRadius,BPY-BossStartRadius)
+          Shapes.ShowShape(bossStartHitOverlay)
+          Shapes.Rotate(bossStartHitOverlay,bossStartRot)
+          Shapes.Move(bulletHit,intersectX-bulletHitWidthH,intersectY-bulletHitLengthH)
+          BossHP=BossHP-1
+        Else
+          bulletHitWallAnimation()
+        EndIf
+        Shapes.ShowShape(bulletHit)
+        Shapes.Rotate(bulletHit,turretRot+180)
+        fireCharge=0
+      Else
+        Shapes.HideShape(turretF)
+        Shapes.HideShape(bulletHit)
+      EndIf
+    Else
+      Shapes.HideShape(turretR)
+      Shapes.HideShape(turretF)
+      Shapes.HideShape(bulletHit)
+    EndIf
+    
+    If(Math.Power(TPX-BPX,2)+Math.Power(TPY-BPY,2)<Math.Power(bodyRadius+BossStartRadius,2))Then
+      If(recoverTimer=0)Then
+        HP=HP-1
+        Shapes.Move(health[HP],TPX-bodyRadius,TPY-bodyRadius)
+        Shapes.ShowShape(health[HP])
+        Shapes.Move(bodyDam,TPX-bodyRadius,TPY-bodyRadius)
+        Shapes.ShowShape(bodyDam)
+        Shapes.HideShape(body)
+        If(HP>0)Then
+          Shapes.Move(health[HP+1],TPX-bodyRadius,TPY-bodyRadius)
+          Shapes.ShowShape(health[HP+1])
+          recoverTimer=recoverTime
+        Else
+          Shapes.HideShape(bossStartHitOverlay)
+          deathStart() 'Big Sub
+          Shapes.HideShape(bossStart)
+          deathEnd() 'Big Sub
+        EndIf
+      EndIf
+    EndIf
+    
+    lastTime=lastTime+MSPF
+  EndWhile
+  
+  While(HP>0 And BossHP>0)
+    While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+    Endwhile
+    MX=GraphicsWindow.MouseX
+    MY=GraphicsWindow.MouseY
+    
+    moveTank() 'Big Sub
+    
+    rotateTurret() 'Big Sub
+    
+    manageRecovery() 'Big Sub
+    
+    bossStartRot=bossStartRot+BossStartRotSpeed
+    If(bossStartRot>360)Then
+      bossStartRot=bossStartRot-360
+    EndIf
+    Shapes.Rotate(bossStart,bossStartRot)
+    BossStartPhase=BossStartPhase+1
+    
+    Shapes.HideShape(bossStartHitOverlay)
+    If(fireCharge<fireChargeTime)Then
+      fireCharge=fireCharge+1
+    EndIf
+    If(mouseClicked=1)Then
+      Shapes.ShowShape(turretR)
+      Shapes.Rotate(turretR,turretRot)
+      If(fireCharge=fireChargeTime)Then
+        Shapes.ShowShape(turretF)
+        Shapes.Rotate(turretF,turretRot)
+        bulletHit=bulletHitAll[Math.GetRandomNumber(3)]
+        TX=BPX
+        TY=BPY
+        targetRadius=BossStartRadius
+        getIntersect() 'Big Sub
+        If(intersectFound=1)Then
+          Shapes.Move(bossStartHitOverlay,BPX-BossStartRadius,BPY-BossStartRadius)
+          Shapes.ShowShape(bossStartHitOverlay)
+          Shapes.Rotate(bossStartHitOverlay,bossStartRot)
+          Shapes.Move(bulletHit,intersectX-bulletHitWidthH,intersectY-bulletHitLengthH)
+          BossHP=BossHP-1
+        Else
+          bulletHitWallAnimation()
+        EndIf
+        Shapes.ShowShape(bulletHit)
+        Shapes.Rotate(bulletHit,turretRot+180)
+        fireCharge=0
+      Else
+        Shapes.HideShape(turretF)
+        Shapes.HideShape(bulletHit)
+      EndIf
+    Else
+      Shapes.HideShape(turretR)
+      Shapes.HideShape(turretF)
+      Shapes.HideShape(bulletHit)
+    EndIf
+    
+    If(Math.Power(TPX-BPX,2)+Math.Power(TPY-BPY,2)<Math.Power(bodyRadius+BossStartRadius,2))Then
+      If(recoverTimer=0)Then
+        HP=HP-1
+        Shapes.Move(health[HP],TPX-bodyRadius,TPY-bodyRadius)
+        Shapes.ShowShape(health[HP])
+        Shapes.Move(bodyDam,TPX-bodyRadius,TPY-bodyRadius)
+        Shapes.ShowShape(bodyDam)
+        Shapes.HideShape(body)
+        If(HP>0)Then
+          Shapes.Move(health[HP+1],TPX-bodyRadius,TPY-bodyRadius)
+          Shapes.ShowShape(health[HP+1])
+          recoverTimer=recoverTime
+        Else
+          Shapes.HideShape(bossStartHitOverlay)
+          deathStart() 'Big Sub
+          Shapes.HideShape(bossStart)
+          deathEnd() 'Big Sub
+        EndIf
+      EndIf
+    EndIf
+    
+    lastTime=lastTime+MSPF
+  EndWhile
+EndSub
+
+Sub introBossBreak
+  
+EndSub
+
+Sub phase1attack1
+  
+EndSub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sub moveTank
+  If(Math.Abs(TVX)>decelerationCoeff)Then
+    TVX=TVX-(Math.Abs(TVX)/TVX*decelerationCoeff*(1-(0.3*Math.Abs(sPressed-wPressed))))
+  Else
+    TVX=0
+  EndIf
+  TVX=TVX+(accelerationCoeff*(dPressed-aPressed-((dPressed-aPressed)*Math.Abs(sPressed-wPressed)*0.3)))
+  If(Math.Abs(TVX)>speedCap)Then
+    TVX=TVX/Math.Abs(TVX)*speedCap
+  EndIf
+  TPX=TPX+TVX
+  If(TPX+bodyRadius>windowX)Then
+    TPX=windowX-bodyRadius
+  ElseIf(TPX-bodyRadius<0)Then
+    TPX=bodyRadius
+  EndIf
+  If(Math.Abs(TVY)>decelerationCoeff)Then
+    TVY=TVY-(Math.Abs(TVY)/TVY*decelerationCoeff*(1-(0.3*Math.Abs(dPressed-aPressed))))
+  Else
+    TVY=0
+  EndIf
+  TVY=TVY+(accelerationCoeff*(sPressed-wPressed-((sPressed-wPressed)*Math.Abs(dPressed-aPressed)*0.3)))
+  If(Math.Abs(TVY)>speedCap)Then
+    TVY=TVY/Math.Abs(TVY)*speedCap
+  EndIf
+  TPY=TPY+TVY
+  If(TPY+bodyRadius>windowY)Then
+    TPY=windowY-bodyRadius
+  ElseIf(TPY-bodyRadius<0)Then
+    TPY=bodyRadius
+  EndIf
+  If(recoverTimer>0)Then
+    If(recoverTimer>recoverTime-HPShakeTime)Then
+      Shapes.Move(bodyDam,TPX-bodyRadius+Math.GetRandomNumber((HPShakeMagnitude*2)+1)-HPShakeMagnitude-1,TPY-bodyRadius+Math.GetRandomNumber((HPShakeMagnitude*2)+1)-HPShakeMagnitude-1)
+      Shapes.Rotate(bodyDam,bodyRot)
+      turretShookX=TPX-bodyRadius+Math.GetRandomNumber((HPShakeMagnitude*2)+1)-HPShakeMagnitude-1
+      turretShookY=TPY-turretLength+Math.GetRandomNumber((HPShakeMagnitude*2)+1)-HPShakeMagnitude-1
+      Shapes.Move(turret,turretShookX,turretShookY)
+      Shapes.Move(turretR,turretShookX,turretShookY)
+    Else
+      Shapes.Move(bodyDam,TPX-bodyRadius,TPY-bodyRadius)
+      Shapes.Rotate(bodyDam,bodyRot)
+      Shapes.Move(body,TPX-bodyRadius,TPY-bodyRadius)
+      Shapes.Rotate(body,bodyRot)
+      Shapes.Move(turret,TPX-bodyRadius,TPY-turretLength)
+      Shapes.Move(turretR,TPX-bodyRadius,TPY-turretLength)
+      bodyRot=bodyRot+((bodyRotRest+(bodyRotMovingCoeff*Math.SquareRoot((TVX*TVX)+(TVY*TVY))))/2)
+    EndIf
+  Else
+    Shapes.Move(body,TPX-bodyRadius,TPY-bodyRadius)
+    Shapes.Rotate(body,bodyRot)
+    Shapes.Move(turret,TPX-bodyRadius,TPY-turretLength)
+    Shapes.Move(turretR,TPX-bodyRadius,TPY-turretLength)
+    bodyRot=bodyRot+bodyRotRest+(bodyRotMovingCoeff*Math.SquareRoot((TVX*TVX)+(TVY*TVY)))
+  EndIf
+  Shapes.Move(turretF,TPX-bodyRadius,TPY-turretFiringLength)
+EndSub
+
+Sub bulletHitWallAnimation
+  If(turretRot<270)Then
+    If(turretRot<180)Then
+      If(turretRot<90)Then
+        If(turretRot>0)Then
+          intersectX=((-TPY)*(MX-TPX)/(MY-TPY))+TPX
+          intersectY=((windowX-TPX)*(MY-TPY)/(MX-TPX))+TPY
+          If(Math.SquareRoot(Math.Power(TPX-windowX,2)+Math.Power(intersectY-TPY,2))<=Math.SquareRoot(Math.Power(TPY,2)+Math.Power(intersectX-TPX,2)))Then
+            Shapes.Move(bulletHit,windowX-bulletHitWidthH,intersectY-bulletHitLengthH)
+          Else
+            Shapes.Move(bulletHit,intersectX-bulletHitWidthH,-bulletHitLengthH)
+          EndIf
+        Else
+          Shapes.Move(bulletHit,TPX-bulletHitWidthH,-bulletHitLengthH)
+        EndIf
+      Else
+        If(turretRot>90)Then
+          intersectX=((windowY-TPY)*(MX-TPX)/(MY-TPY))+TPX
+          intersectY=((windowX-TPX)*(MY-TPY)/(MX-TPX))+TPY
+          If(Math.SquareRoot(Math.Power(TPX-windowX,2)+Math.Power(intersectY-TPY,2))<=Math.SquareRoot(Math.Power(TPY-windowY,2)+Math.Power(intersectX-TPX,2)))Then
+            Shapes.Move(bulletHit,windowX-bulletHitWidthH,intersectY-bulletHitLengthH)
+          Else
+            Shapes.Move(bulletHit,intersectX-bulletHitWidthH,windowY-bulletHitLengthH)
+          EndIf
+        Else
+          Shapes.Move(bulletHit,windowX-bulletHitWidthH,TPY-bulletHitLengthH)
+        EndIf
+      EndIf
+    Else
+      If(turretRot>180)Then
+        intersectX=((windowY-TPY)*(MX-TPX)/(MY-TPY))+TPX
+        intersectY=((-TPX)*(MY-TPY)/(MX-TPX))+TPY
+        If(Math.SquareRoot(Math.Power(TPX,2)+Math.Power(intersectY-TPY,2))<=Math.SquareRoot(Math.Power(TPY-windowY,2)+Math.Power(intersectX-TPX,2)))Then
+          Shapes.Move(bulletHit,-bulletHitWidthH,intersectY-bulletHitLengthH)
+        Else
+          Shapes.Move(bulletHit,intersectX-bulletHitWidthH,windowY-bulletHitLengthH)
+        EndIf
+      Else
+        Shapes.Move(bulletHit,TPX-bulletHitWidthH,windowY-bulletHitLengthH)
+      EndIf
+    EndIf
+  Else
+    If(turretRot>270)Then
+      intersectX=((-TPY)*(MX-TPX)/(MY-TPY))+TPX
+      intersectY=((-TPX)*(MY-TPY)/(MX-TPX))+TPY
+      If(Math.SquareRoot(Math.Power(TPX,2)+Math.Power(intersectY-TPY,2))<=Math.SquareRoot(Math.Power(TPY,2)+Math.Power(intersectX-TPX,2)))Then
+        Shapes.Move(bulletHit,-bulletHitWidthH,intersectY-bulletHitLengthH)
+      Else
+        Shapes.Move(bulletHit,intersectX-bulletHitWidthH,-bulletHitLengthH)
+      EndIf
+    Else
+      Shapes.Move(bulletHit,-bulletHitWidthH,TPY-bulletHitLengthH)
+    EndIf
+  EndIf
+EndSub
+
+Sub rotateTurret
+  If(TPX<>MX)Then
+    turretRot=Math.ArcTan((MY-TPY)/(MX-TPX))*180/Math.Pi+90
+    If(TPX>MX)Then
+      turretRot=turretRot+180
+    EndIf
+  ElseIf(TPY<MY)Then
+    turretRot=180
+  Else
+    turretRot=0
+  EndIf
+  'turretRot=Math.Floor(turretRot/90)*90
+  Shapes.Rotate(turret,turretRot)
+EndSub
+
+Sub getIntersect
+  intersectFound=0
+  FX=TPX+(turretLength*Math.Sin(turretRot*Math.Pi/180))
+  FY=TPY-(turretLength*Math.Cos(turretRot*Math.Pi/180))
+  'Shapes.Move(testArrow,FX,FY)
+  If(Math.SquareRoot(Math.Power(TX-FX,2)+Math.Power(TY-FY,2))<=targetRadius)Then
+    intersectX=FX
+    intersectY=FY
+    intersectFound=1
+    'Shapes.Move(testArrow,intersectX,intersectY)
+    'Program.Delay(1000)
+  Else
+    If((turretRot/90)-Math.Floor(turretRot/90)=0)Then
+      If(turretRot=0 Or turretRot=180)Then
+        If(Math.Abs(TPX-TX)<=targetRadius)Then
+          intersectX=TPX
+          intersectY=TY+((TPY-TY)/Math.Abs(TPY-TY)*Math.SquareRoot(Math.Power(targetRadius,2)-Math.Power(TPX-TX,2)))
+          'Shapes.Move(testArrow,intersectX,intersectY)
+          'Program.Delay(1000)
+          If((intersectY-FY)*(FY-TPY)>=0)Then
+            intersectFound=1
+          EndIf
+        EndIf
+      Else
+        If(Math.Abs(TPY-TY)<=targetRadius)Then
+          intersectX=TX+((TPX-TX)/Math.Abs(TPX-TX)*Math.SquareRoot(Math.Power(targetRadius,2)-Math.Power(TPY-TY,2)))
+          intersectY=TPY
+          'Shapes.Move(testArrow,intersectX,intersectY)
+          'Program.Delay(1000)
+          If((intersectX-FX)*(FX-TPX)>=0)Then
+            intersectFound=1
+          EndIf
+        EndIf
+      EndIf
+    Else
+      m=(MY-TPY)/(MX-TPX)
+      b=TPY-(m*TPX)
+      discriminant=Math.Power((m*(b-TY))-TX,2)-(Math.Power(m,2)+1)*(Math.Power(b-TY,2)+Math.Power(TX,2)-Math.Power(targetRadius,2))
+      If(discriminant>=0)Then
+        intersectX=((TX+(m*(TY-b)))+(((TPX-MX)/Math.Abs(TPX-MX))*Math.SquareRoot(discriminant)))/(Math.Power(m,2)+1)
+        intersectY=((((b+(m*TX))/Math.Power(m,2))+TY)+(((TPY-MY)/Math.Abs(TPY-MY))*Math.SquareRoot(Math.Power(((b+(m*TX))/Math.Power(m,2))+TY,2)-(((1/Math.Power(m,2))+1)*(Math.Power((b/m)+TX,2)+Math.Power(TY,2)-Math.Power(targetRadius,2))))))/((1/Math.Power(m,2))+1)
+        'Shapes.Move(testArrow,intersectX,intersectY)
+        'Program.Delay(1000)
+        If((intersectX-TPX)*(MX-TPX)>=0 And (intersectX-FX)*(FX-TPX)>=0)Then
+          intersectFound=1
+        EndIf
+      EndIf
+    EndIf
+  EndIf
+EndSub
+
+Sub manageRecovery
+  If(recoverTimer>0)Then
+    If(recoverTimer>recoverTime-HPFadeTime)Then
+      HPFadeTimer=HPFadeTimer+1
+      If(HPFadeTimer=HPFadePeriod)Then
+        Shapes.ShowShape(health[HP+1])
+      ElseIf(HPFadeTimer=2*HPFadePeriod)Then
+        Shapes.HideShape(health[HP+1])
+        HPFadeTimer=0
+      EndIf
+    ElseIf(recoverTimer=recoverTime-HPFadeTime)Then
+      Shapes.HideShape(health[HP+1])
+    ElseIf(recoverTimer=HPGoneTime+1)Then
+      Shapes.ShowShape(body)
+    ElseIf(recoverTimer=1)Then
+      Shapes.SetOpacity(health[HP],100)
+      Shapes.SetOpacity(bodyDam,100)
+      Shapes.HideShape(health[HP])
+      Shapes.Move(body,TPX-bodyRadius,TPY-bodyRadius)
+      Shapes.ShowShape(body)
+      Shapes.HideShape(bodyDam)
+    ElseIf(recoverTimer<HPGoneTime+1)Then
+      Shapes.SetOpacity(health[HP],(recoverTimer-1)*100/HPGoneTime)
+      Shapes.SetOpacity(bodyDam,(recoverTimer-1)*100/HPGoneTime)
+    EndIf
+    Shapes.Move(health[HP+1],TPX-bodyRadius,TPY-bodyRadius)
+    Shapes.Move(health[HP],TPX-bodyRadius,TPY-bodyRadius)
+    recoverTimer=recoverTimer-1
+  EndIf
+EndSub  
+
+Sub deathStart
+  Shapes.HideShape(turretF)
+  Shapes.HideShape(turretR)
+  Shapes.HideShape(bulletHit)
+  For i=1 To deathShakeTime
+    HPFadeTimer=HPFadeTimer+1
+    If(HPFadeTimer=HPFadePeriod)Then
+      Shapes.ShowShape(health[0])
+    ElseIf(HPFadeTimer=2*HPFadePeriod)Then
+      Shapes.HideShape(health[0])
+      HPFadeTimer=0
+    EndIf
+    Shapes.Move(bodyDam,TPX-bodyRadius+Math.GetRandomNumber((HPShakeMagnitude*2)+1)-HPShakeMagnitude-1,TPY-bodyRadius+Math.GetRandomNumber((HPShakeMagnitude*2)+1)-HPShakeMagnitude-1)
+    Shapes.Move(turret,TPX-bodyRadius+Math.GetRandomNumber((HPShakeMagnitude*2)+1)-HPShakeMagnitude-1,TPY-turretLength+Math.GetRandomNumber((HPShakeMagnitude*2)+1)-HPShakeMagnitude-1)
+    Program.Delay(MSPF)
+  EndFor
+  For i=1 To 7
+    Shapes.Move(deathSplosion[i],TPX-deathSplosionRadius+Math.GetRandomNumber((deathSplosionShakeMagnitude*2)+1)-deathSplosionShakeMagnitude-1,TPY-deathSplosionRadius+Math.GetRandomNumber((deathSplosionShakeMagnitude*2)+1)-deathSplosionShakeMagnitude-1)
+    Shapes.ShowShape(deathSplosion[i])
+    Shapes.Zoom(deathSplosion[i],i*deathSplosionSize1/7,i*deathSplosionSize1/7)
+    Program.Delay(MSPF*3)
+  EndFor
+  Shapes.Move(deathRing,TPX-deathRingRadius,TPY-deathRingRadius)
+  Shapes.ShowShape(deathRing)
+  For i=1 To deathFadeOutTime
+    Shapes.Zoom(deathRing,Math.Power(i/deathFadeOutTime,2)*deathRingMaxSize,Math.Power(i/deathFadeOutTime,2)*deathRingMaxSize)
+    Shapes.Move(deathSplosion[7],TPX-deathSplosionRadius+Math.GetRandomNumber((deathSplosionShakeMagnitude*2)+1)-deathSplosionShakeMagnitude-1,TPY-deathSplosionRadius+Math.GetRandomNumber((deathSplosionShakeMagnitude*2)+1)-deathSplosionShakeMagnitude-1)
+    Shapes.Zoom(deathSplosion[7],deathSplosionSize1+(Math.SquareRoot(i/deathFadeOutTime)*(deathSplosionSize2-deathSplosionSize1)),deathSplosionSize1+(Math.SquareRoot(i/deathFadeOutTime)*(deathSplosionSize2-deathSplosionSize1)))
+    Shapes.SetOpacity(whiteScreen,100*Math.Power(i/deathFadeOutTime,2))
+    Program.Delay(MSPF)
+  EndFor
+  For i=1 To 7
+    Shapes.HideShape(deathSplosion[i])
+  EndFor
+  Shapes.HideShape(deathRing)
+  Shapes.HideShape(turret)
+  Shapes.HideShape(bodyDam)
+  Shapes.HideShape(health[0])
+  For i=1 To 5
+    Shapes.Move(bodyDead[i],TPX-bodyRadius,TPY-bodyRadius)
+  EndFor
+EndSub
+
+Sub deathEnd
+  Program.Delay(MSPF*deathWhiteTime)
+  For i=1 To deathFadeInTime
+    Shapes.SetOpacity(whiteScreen,100*(1-(i/deathFadeInTime)))
+    deathFireFrame=deathFireFrame+1
+    If(deathFireFrame>=deathFireSpeed)Then
+      deathFireCycle=deathFireCycle+1
+      If(deathFireCycle>4)Then
+        deathFireCycle=0
+        Shapes.ShowShape(bodyDead[1])
+        Shapes.HideShape(bodyDead[5])
+      Else
+        Shapes.ShowShape(bodyDead[deathFireCycle+1])
+        Shapes.HideShape(bodyDead[deathFireCycle])
+      EndIf
+      deathFireFrame=0
+    EndIf
+    Program.Delay(MSPF)
+  EndFor
+  For i=1 To deathWaitTime
+    deathFireFrame=deathFireFrame+1
+    If(deathFireFrame>=deathFireSpeed)Then
+      deathFireCycle=deathFireCycle+1
+      If(deathFireCycle>4)Then
+        deathFireCycle=0
+        Shapes.ShowShape(bodyDead[1])
+        Shapes.HideShape(bodyDead[5])
+      Else
+        Shapes.ShowShape(bodyDead[deathFireCycle+1])
+        Shapes.HideShape(bodyDead[deathFireCycle])
+      EndIf
+      deathFireFrame=0
+    EndIf
+    Program.Delay(MSPF)
+  EndFor
+EndSub
+
+Sub kDown
+  If GraphicsWindow.LastKey="W" Then 
+    wPressed=1
+  ElseIf GraphicsWindow.LastKey="S" Then
+    sPressed=1
+  ElseIf GraphicsWindow.LastKey="A" Then
+    aPressed=1
+  ElseIf GraphicsWindow.LastKey="D" Then
+    dPressed=1
+  EndIf
+EndSub
+
+Sub kUp
+  If GraphicsWindow.LastKey="W" Then 
+    wPressed=0
+  ElseIf GraphicsWindow.LastKey="S" Then
+    sPressed=0
+  ElseIf GraphicsWindow.LastKey="A" Then
+    aPressed=0
+  ElseIf GraphicsWindow.LastKey="D" Then
+    dPressed=0
+  EndIf
+EndSub
+
+Sub mDown
+  mouseClicked=1
+EndSub
+
+Sub mUp
+  mouseClicked=0
+EndSub
+
+Sub thing
+  While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+    Endwhile
+    For i=1 To Math.Floor((Clock.ElapsedMilliseconds-lastTime)/MSPF)
+      MX=GraphicsWindow.MouseX
+      MY=GraphicsWindow.MouseY
+      
+      'Move tank
+      moveTank() 'Big Sub
+      
+      'Rotate Turret
+      rotateTurret() 'Big Sub
+      
+      'Move Enemy
+      
+      'Fire (complicated)
+      If(fireCharge<fireChargeTime)Then
+        fireCharge=fireCharge+1
+      EndIf
+      If(mouseClicked=1)Then
+        Shapes.ShowShape(turretR)
+        Shapes.Rotate(turretR,turretRot)
+        If(fireCharge=fireChargeTime)Then
+          Shapes.ShowShape(turretF)
+          Shapes.Rotate(turretF,turretRot)
+          bulletHit=bulletHitAll[Math.GetRandomNumber(3)]
+          bulletHitWallAnimation() 'Big Sub
+          Shapes.ShowShape(bulletHit)
+          Shapes.Rotate(bulletHit,turretRot+180)
+          fireCharge=0
+        Else
+          Shapes.HideShape(turretF)
+          Shapes.HideShape(bulletHit)
+        EndIf
+      Else
+        Shapes.HideShape(turretR)
+        Shapes.HideShape(turretF)
+        Shapes.HideShape(bulletHit)
+      EndIf
+      
+      'Shot consequences
+      
+      ''Player Hit
+      
+    EndFor
+    lastTime=Clock.ElapsedMilliseconds
+EndSub
