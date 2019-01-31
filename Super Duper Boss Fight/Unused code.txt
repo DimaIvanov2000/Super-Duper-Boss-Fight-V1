@@ -1,0 +1,307 @@
+Sub intro1
+  lastTime=Clock.ElapsedMilliseconds
+  For frameTimer=1 To spawnLength
+    While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+    Endwhile
+    For i=1 To Math.Floor((Clock.ElapsedMilliseconds-lastTime)/MSPF)
+      MX=GraphicsWindow.MouseX
+      MY=GraphicsWindow.MouseY
+      
+      moveTank() 'Big Sub
+      
+      rotateTurret() 'Big Sub
+      
+      If(fireCharge<fireChargeTime)Then
+        fireCharge=fireCharge+1
+      EndIf
+      If(mouseClicked=1)Then
+        Shapes.ShowShape(turretR)
+        Shapes.Rotate(turretR,turretRot)
+        If(fireCharge=fireChargeTime)Then
+          Shapes.ShowShape(turretF)
+          Shapes.Rotate(turretF,turretRot)
+          bulletHit=bulletHitAll[Math.GetRandomNumber(3)]
+          bulletHitWallAnimation() 'Big Sub
+          Shapes.ShowShape(bulletHit)
+          Shapes.Rotate(bulletHit,turretRot+180)
+          fireCharge=0
+        Else
+          Shapes.HideShape(turretF)
+          Shapes.HideShape(bulletHit)
+        EndIf
+      Else
+        Shapes.HideShape(turretR)
+        Shapes.HideShape(turretF)
+        Shapes.HideShape(bulletHit)
+      EndIf
+    EndFor
+    lastTime=Clock.ElapsedMilliseconds
+  EndFor
+  
+  For i=1 To numAsteroidsScreen
+    asteroidPos[i][1]=Math.GetRandomNumber(windowX-(2*asteroidRadius))+asteroidRadius
+    asteroidPos[i][2]=Math.GetRandomNumber((2*windowY)-(2*asteroidRadius))+asteroidRadius-(2*windowY)
+    Shapes.Move(asteroids[i],asteroidPos[i][1],asteroidPos[i][2])
+    asteroidVelocities[i][1]=asteroidVX+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationX)
+    asteroidVelocities[i][2]=asteroidVY+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationY)
+    asteroidRotSpeeds[i]=asteroidRotSpeedBase+Math.GetRandomNumber(asteroidRotSpeedDeviation)
+    asteroidRots[i]=0
+    asteroidHP[i]=asteroidBaseHP
+    asteroidsExist[i]=1
+    asteroidDustCycle[i]=0
+    Shapes.ShowShape(asteroids[i])
+  EndFor
+  
+  lastTime=Clock.ElapsedMilliseconds
+  While(numAsteroids>0 And HP>0)
+    While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+    Endwhile
+    If(Math.Floor((Clock.ElapsedMilliseconds-lastTime)/MSPF)>1)Then
+      TextWindow.WriteLine("OVERLOAD: "+Math.Floor((Clock.ElapsedMilliseconds-lastTime)/MSPF))
+    EndIf
+    For i=1 To Math.Floor((Clock.ElapsedMilliseconds-lastTime)/MSPF)
+      MX=GraphicsWindow.MouseX
+      MY=GraphicsWindow.MouseY
+      
+      moveTank() 'Big Sub
+      
+      rotateTurret() 'Big Sub
+      
+      manageRecovery() 'Big Sub
+      
+      If(fireCharge<fireChargeTime)Then
+        fireCharge=fireCharge+1
+      EndIf
+      If(mouseClicked=1)Then
+        Shapes.ShowShape(turretR)
+        Shapes.Rotate(turretR,turretRot)
+        Shapes.HideShape(asteroidHitOverlay)
+        If(fireCharge=fireChargeTime)Then
+          Shapes.ShowShape(turretF)
+          Shapes.Rotate(turretF,turretRot)
+          bulletHit=bulletHitAll[Math.GetRandomNumber(3)]
+          bulletHasHit=0
+          For i=1 To numAsteroidsScreen
+            If(asteroidsExist[i]=1)Then
+              If(asteroidPos[i][2]+asteroidRadius>0)Then
+                If(asteroidPos[i][1]+asteroidRadius>0 And asteroidPos[i][1]-asteroidRadius<windowX)Then
+                  TX=asteroidPos[i][1]
+                  TY=asteroidPos[i][2]
+                  targetRadius=asteroidRadius
+                  getIntersect() 'Big Sub
+                  If(intersectFound=1)Then
+                    If(bulletHasHit=0 Or Math.SquareRoot(Math.Power(intersectX-TPX,2)+Math.Power(intersectY-TPY,2))<=Math.SquareRoot(Math.Power(bulletHitX-TPX,2)+Math.Power(bulletHitY-TPY,2)))Then
+                      bulletHitX=intersectX
+                      bulletHitY=intersectY
+                      bulletTargetNum=i
+                      bulletHasHit=1
+                    EndIf
+                  EndIf
+                EndIf
+              EndIf
+            EndIf
+          EndFor
+          If(bulletHasHit=1)Then
+            asteroidHP[bulletTargetNum]=asteroidHP[bulletTargetNum]-1
+            If(asteroidHP[bulletTargetNum]<=0)Then
+              asteroidsExist[bulletTargetNum]=0
+              asteroidDustCycle[bulletTargetNum]=1
+              Shapes.HideShape(asteroids[bulletTargetNum])
+              asteroidDust[bulletTargetNum]=Shapes.AddImage(dust1IM)
+              Shapes.Move(asteroidDust[bulletTargetNum],asteroidPos[bulletTargetNum][1]-dustRadius,asteroidPos[bulletTargetNum][2]-dustRadius)
+            Else
+              If(Math.SquareRoot(Math.Power(bulletHitX-FX,2)+Math.Power(bulletHitY-FY,2))>=asteroidRadius)Then
+                Shapes.Move(bulletHit,bulletHitX-bulletHitWidthH,bulletHitY-bulletHitLengthH)
+                Shapes.ShowShape(bulletHit)
+                Shapes.Rotate(bulletHit,turretRot+180)
+              EndIf
+              Shapes.Move(asteroidHitOverlay,asteroidPos[bulletTargetNum][1]-asteroidRadius,asteroidPos[bulletTargetNum][2]-asteroidRadius)
+              Shapes.ShowShape(asteroidHitOverlay)
+              Shapes.Rotate(asteroidHitOverlay,asteroidRots[bulletTargetNum])
+            EndIf
+          Else
+            bulletHitWallAnimation() 'Big Sub
+            Shapes.ShowShape(bulletHit)
+            Shapes.Rotate(bulletHit,turretRot+180)
+          EndIf
+          fireCharge=0
+        Else
+          Shapes.HideShape(turretF)
+          Shapes.HideShape(bulletHit)
+        EndIf
+      Else
+        Shapes.HideShape(turretR)
+        Shapes.HideShape(turretF)
+        Shapes.HideShape(bulletHit)
+        Shapes.HideShape(asteroidHitOverlay)
+      EndIf
+    EndFor
+    
+    For i=1 To numAsteroidsScreen
+      If(asteroidsExist[i]=1)Then
+        asteroidPos[i][1]=asteroidPos[i][1]+asteroidVelocities[i][1]
+        asteroidPos[i][2]=asteroidPos[i][2]+asteroidVelocities[i][2]
+        If(asteroidPos[i][2]>windowY+asteroidRadius)Then
+          If(numAsteroids<=numAsteroidsScreen)Then
+            Shapes.HideShape(asteroids[i])
+            asteroidsExist[i]=0
+          Else
+            asteroidPos[i][1]=Math.GetRandomNumber(windowX-(2*asteroidRadius))+asteroidRadius
+            asteroidPos[i][2]=Math.GetRandomNumber(windowY-(2*asteroidRadius))+asteroidRadius-windowY
+            asteroidVelocities[i][1]=asteroidVX+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationX)
+            asteroidVelocities[i][2]=asteroidVY+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationY)
+            asteroidRotSpeeds[i]=asteroidRotSpeedBase+Math.GetRandomNumber(asteroidRotSpeedDeviation)
+            asteroidHP[i]=asteroidBaseHP
+          EndIf
+          numAsteroids=numAsteroids-1
+        Else
+          If(Math.SquareRoot(Math.Power(asteroidPos[i][1]-TPX,2)+Math.Power(asteroidPos[i][2]-TPY,2))<asteroidRadius+bodyRadius)Then
+            If(recoverTimer=0)Then
+              HP=HP-1
+              Shapes.Move(health[HP],TPX-bodyRadius,TPY-bodyRadius)
+              Shapes.ShowShape(health[HP])
+              Shapes.Move(bodyDam,TPX-bodyRadius,TPY-bodyRadius)
+              Shapes.ShowShape(bodyDam)
+              Shapes.HideShape(body)
+              If(HP>0)Then
+                Shapes.Move(health[HP+1],TPX-bodyRadius,TPY-bodyRadius)
+                Shapes.ShowShape(health[HP+1])
+                recoverTimer=recoverTime
+                'If(TPX<>asteroidPos[i][1] And TPY<>asteroidPos[i][2])Then
+                  'TVX=TVX+(hitVelocity*(TPX-asteroidPos[i][1])/Math.SquareRoot(Math.Power(asteroidPos[i][1]-TPX,2)+Math.Power(asteroidPos[i][2]-TPY,2)))
+                  'TVY=TVY+(hitVelocity*(TPY-asteroidPos[i][2])/Math.SquareRoot(Math.Power(asteroidPos[i][1]-TPX,2)+Math.Power(asteroidPos[i][2]-TPY,2)))
+                'EndIf
+              Else
+                deathStart() 'Big Sub
+                For i=1 To numAsteroidsScreen
+                  If(asteroidsExist[i]=1)Then
+                    Shapes.HideShape(asteroids[i])
+                  EndIf
+                EndFor
+                deathEnd() 'Big Sub
+                willRetry=-1
+                While(willRetry=-1)
+                  If(GraphicsWindow.MouseY>=deathScreenY And GraphicsWindow.MouseY<=deathScreenYend)Then
+                    If(GraphicsWindow.MouseX>=DSRstart And GraphicsWindow.MouseX<=DSRend)Then
+                      Shapes.HideShape(deathScreenN)
+                      Shapes.ShowShape(deathScreenR)
+                      Shapes.HideShape(deathScreenQ)
+                      If(mouseClicked=1)Then
+                        willRetry=1
+                      EndIf
+                    ElseIf(GraphicsWindow.MouseX>=DSQstart And GraphicsWindow.MouseX<=DSQend)Then
+                      Shapes.HideShape(deathScreenN)
+                      Shapes.HideShape(deathScreenR)
+                      Shapes.ShowShape(deathScreenQ)
+                      If(mouseClicked=1)Then
+                        willRetry=0
+                      EndIf
+                    Else
+                      Shapes.ShowShape(deathScreenN)
+                      Shapes.HideShape(deathScreenR)
+                      Shapes.HideShape(deathScreenQ)
+                    EndIf
+                  Else
+                    Shapes.ShowShape(deathScreenN)
+                    Shapes.HideShape(deathScreenR)
+                    Shapes.HideShape(deathScreenQ)
+                  EndIf
+                  deathFireFrame=deathFireFrame+1
+                  If(deathFireFrame>=deathFireSpeed)Then
+                    deathFireCycle=deathFireCycle+1
+                    If(deathFireCycle>4)Then
+                      deathFireCycle=0
+                      Shapes.ShowShape(bodyDead[1])
+                      Shapes.HideShape(bodyDead[5])
+                    Else
+                      Shapes.ShowShape(bodyDead[deathFireCycle+1])
+                      Shapes.HideShape(bodyDead[deathFireCycle])
+                    EndIf
+                    deathFireFrame=0
+                  EndIf
+                  Program.Delay(MSPF)
+                EndWhile
+                
+              EndIf
+            EndIf
+          EndIf
+        EndIf
+        Shapes.Move(asteroids[i],asteroidPos[i][1]-asteroidRadius,asteroidPos[i][2]-asteroidRadius)
+        Shapes.Rotate(asteroids[i],asteroidRots[i])
+        asteroidRots[i]=asteroidRots[i]+asteroidRotSpeeds[i]
+      Else
+        If(asteroidDustCycle[i]>0)Then
+          If(asteroidDustCycle[i]>dustCycleLength)Then
+            asteroidDustCycle[i]=0
+            Shapes.Remove(asteroidDust[i])
+            If(numAsteroids>numAsteroidsScreen)Then
+              asteroidsExist[i]=1
+              asteroidPos[i][1]=Math.GetRandomNumber(windowX-(2*asteroidRadius))+asteroidRadius
+              asteroidPos[i][2]=Math.GetRandomNumber(windowY-(2*asteroidRadius))+asteroidRadius-windowY
+              Shapes.Move(asteroids[i],asteroidPos[i][1]-asteroidRadius,asteroidPos[i][2]-asteroidRadius)
+              Shapes.ShowShape(asteroids[i])
+              asteroidVelocities[i][1]=asteroidVX+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationX)
+              asteroidVelocities[i][2]=asteroidVY+((Math.GetRandomNumber(101)-51)/50*asteroidDeviationY)
+              asteroidRotSpeeds[i]=asteroidRotSpeedBase+Math.GetRandomNumber(asteroidRotSpeedDeviation)
+              asteroidHP[i]=asteroidBaseHP
+            EndIf
+            numAsteroids=numAsteroids-1
+          Else
+            Shapes.Zoom(asteroidDust[i],dustSizeStart+(Math.SquareRoot(asteroidDustCycle[i]/dustCycleLength)*(dustSizeEnd-dustSizeStart)),dustSizeStart+(Math.SquareRoot(asteroidDustCycle[i]/dustCycleLength)*(dustSizeEnd-dustSizeStart)))
+            Shapes.SetOpacity(asteroidDust[i],100*Math.Power(1-(asteroidDustCycle[i]/dustCycleLength),2))
+            Shapes.Rotate(asteroidDust[i],asteroidRots[i])
+            asteroidRots[i]=asteroidRots[i]+(asteroidRotSpeeds[i]*Math.SquareRoot(1-(asteroidDustCycle[i]/dustCycleLength)))
+            asteroidDustCycle[i]=asteroidDustCycle[i]+1
+            EndIf
+         EndIf
+      EndIf
+    EndFor
+    
+    lastTime=Clock.ElapsedMilliseconds
+  EndWhile
+  
+  While(HP>0 And BossStartPhase<BossStartSpeed)
+    While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+    Endwhile
+    For i=1 To Math.Floor((Clock.ElapsedMilliseconds-lastTime)/MSPF)
+      MX=GraphicsWindow.MouseX
+      MY=GraphicsWindow.MouseY
+      
+      moveTank() 'Big Sub
+      
+      rotateTurret() 'Big Sub
+      
+      If(fireCharge<fireChargeTime)Then
+        fireCharge=fireCharge+1
+      EndIf
+      If(mouseClicked=1)Then
+        Shapes.ShowShape(turretR)
+        Shapes.Rotate(turretR,turretRot)
+        If(fireCharge=fireChargeTime)Then
+          Shapes.ShowShape(turretF)
+          Shapes.Rotate(turretF,turretRot)
+          bulletHit=bulletHitAll[Math.GetRandomNumber(3)]
+          
+          bulletHitWallAnimation() 'Big Sub
+          
+          Shapes.ShowShape(bulletHit)
+          Shapes.Rotate(bulletHit,turretRot+180)
+          fireCharge=0
+        Else
+          Shapes.HideShape(turretF)
+          Shapes.HideShape(bulletHit)
+        EndIf
+      Else
+        Shapes.HideShape(turretR)
+        Shapes.HideShape(turretF)
+        Shapes.HideShape(bulletHit)
+      EndIf
+      
+      BPY=((windowY/2)+BossStartRadius)*(1-Math.Power((BossStartPhase/BossStartSpeed)-1,2))
+      Shapes.Move(bossStart,BPX-BossStartRadius,BPY-BossStartRadius)
+      TextWindow.WriteLine(BPY)
+      BossStartPhase=BossStartPhase+1
+    EndFor
+    lastTime=Clock.ElapsedMilliseconds
+  EndWhile
+EndSub
