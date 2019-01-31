@@ -1,0 +1,89 @@
+
+windowX=1280
+windowY=720
+MSPF=10
+
+wPressed=0
+aPressed=0
+sPressed=0
+dPressed=0
+mouseClicked=0
+gemPX=0
+gemPY=0
+lastTime=0
+fps=0
+
+GraphicsWindow.Width=windowX
+GraphicsWindow.Height=windowY
+GraphicsWindow.CanResize=0
+
+gemIM=Program.Directory+"\images\gem.png"
+gem=Shapes.AddImage(gemIM)
+
+GraphicsWindow.KeyUp=kUp
+GraphicsWindow.KeyDown=kDown
+GraphicsWindow.MouseUp=mUp
+GraphicsWindow.MouseDown=mDown
+
+lastTime=Clock.ElapsedMilliseconds
+
+mainLoop:
+  
+  While(Clock.ElapsedMilliseconds-lastTime<MSPF)
+  Endwhile
+  
+  For i=1 To Math.Floor((Clock.ElapsedMilliseconds-lastTime)/MSPF)
+    moveGem()
+  EndFor
+  
+  lastTime=Clock.ElapsedMilliseconds
+  
+Goto mainLoop
+
+Sub moveGem
+  If(aPressed=1)Then
+    gemPX=gemPX-1
+  EndIf
+  If(dPressed=1)Then
+    gemPX=gemPX+1
+  EndIf
+  If(wPressed=1)Then
+    gemPY=gemPY-1
+  EndIf
+  If(sPressed=1)Then
+    gemPY=gemPY+1
+  EndIf
+  Shapes.Move(gem,gemPX,gemPY)
+EndSub
+
+Sub kDown
+  If GraphicsWindow.LastKey="W" Then 
+    wPressed=1
+  ElseIf GraphicsWindow.LastKey="S" Then
+    sPressed=1
+  ElseIf GraphicsWindow.LastKey="A" Then
+    aPressed=1
+  ElseIf GraphicsWindow.LastKey="D" Then
+    dPressed=1
+  EndIf
+EndSub
+
+Sub kUp
+  If GraphicsWindow.LastKey="W" Then 
+    wPressed=0
+  ElseIf GraphicsWindow.LastKey="S" Then
+    sPressed=0
+  ElseIf GraphicsWindow.LastKey="A" Then
+    aPressed=0
+  ElseIf GraphicsWindow.LastKey="D" Then
+    dPressed=0
+  EndIf
+EndSub
+
+Sub mDown
+  mouseClicked=1
+EndSub
+
+Sub mUp
+  mouseClicked=0
+EndSub
